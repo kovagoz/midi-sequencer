@@ -1,9 +1,14 @@
-#
-# This is a project Makefile. It is assumed the directory this Makefile resides in is a
-# project subdirectory.
-#
+port := /dev/ttyS1
+baud := 115200
 
-PROJECT_NAME := app-template
+.PHONY: build
+build:
+	idf.py build
 
-include $(IDF_PATH)/make/project.mk
+.PHONY: install
+install:
+	idf.py -p $(port) -b $(baud) flash
 
+.PHONY: monitor
+monitor:
+	idf.py -p $(port) -b $(baud) monitor
