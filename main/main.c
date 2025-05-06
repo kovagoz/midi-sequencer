@@ -35,14 +35,14 @@ void app_main(void)
     midi_init(UART_NUM_2, GPIO_NUM_18);
 
     StepSequence melody = {
-        {60, 100, 80},
-        {62, 100, 80},
-        {64, 100, 80},
-        {65, 100, 80},
-        {67, 100, 80},
-        {69, 100, 80},
-        {71, 100, 80},
-        {72, 100, 80}
+        {NOTE_C4, 100, 80},
+        {NOTE_D4, 100, 80},
+        {NOTE_E4, 100, 80},
+        {NOTE_F4, 100, 80},
+        {NOTE_G4, 100, 80},
+        {NOTE_A4, 100, 80},
+        {NOTE_B4, 100, 80},
+        {NOTE_C5, 100, 80}
     };
 
     MidiPlayerArgs player_args = {
