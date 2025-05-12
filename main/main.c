@@ -1,61 +1,47 @@
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "driver/uart.h"
+#include "driver/uart.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
-#include "midi/midi.h"
-#include "midi/notes.h"
+#include "midi/parser.h"
 
-#define MIDI_CH 4
+#define UART_PORT UART_NUM_0
+#define BUF_SIZE 1024
 
-void midi_player_task(void *pvParameters)
+// void print_byte_binary(uint8_t byte)
+// {
+//     for (int i = 7; i >= 0; i--) {
+//         putchar((byte >> i) & 1 ? '1' : '0');
+//     }
+//     putchar('\n');
+// }
+
+void handle_midi_message(const midi_message_t *msg)
 {
-    MidiPlayerArgs *args = (MidiPlayerArgs *) pvParameters;
-
-    const StepSequence *sequence = args->sequence;
-    uint16_t tempo = args->tempo;
-
-    uint32_t step_duration_ms = 60000 / tempo;
-
-    while (true) {
-        for (int i = 0; i < STEP_SEQUENCE_LENGTH; i++) {
-            Step step = (*sequence)[i];
-            uint32_t gate_time_ms = (step.gate * step_duration_ms) / 100;
-
-            midi_note_on(MIDI_CH, step.note, step.velocity);
-            vTaskDelay(pdMS_TO_TICKS(gate_time_ms));
-            midi_note_off(MIDI_CH, step.note, 64);
-
-            vTaskDelay(pdMS_TO_TICKS(step_duration_ms - gate_time_ms));
-        }
-    }
+    printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));
 }
 
 void app_main(void)
 {
-    midi_init(UART_NUM_2, GPIO_NUM_18);
-
-    StepSequence melody = {
-        {NOTE_C4, 100, 80},
-        {NOTE_D4, 100, 80},
-        {NOTE_E4, 100, 80},
-        {NOTE_F4, 100, 80},
-        {NOTE_G4, 100, 80},
-        {NOTE_A4, 100, 80},
-        {NOTE_B4, 100, 80},
-        {NOTE_C5, 100, 80}
+    const uart_config_t uart_config = {
+        .baud_rate = 115200, // Not MIDI standard, but works for this test
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
     };
 
-    MidiPlayerArgs player_args = {
-        .sequence = &melody,
-        .tempo    = 120
-    };
+    ESP_ERROR_CHECK(uart_driver_install(UART_PORT, BUF_SIZE * 2, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(UART_PORT, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(UART_PORT, GPIO_NUM_1, GPIO_NUM_3, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
 
-    xTaskCreate(
-        midi_player_task,    // Task function
-        "MIDI Player",       // Task name (for debugging)
-        2048,                // Stack size in words (not bytes)
-        &player_args,        // Task parameter
-        5,                   // Priority (higher number = higher priority)
-        NULL                 // Task handle (not used here)
-    );
+    uint8_t data[BUF_SIZE];
+
+    while (true) {
+        int len = uart_read_bytes(UART_PORT, data, BUF_SIZE, pdMS_TO_TICKS(100));
+
+        for (int i = 0; i < len; i++) {
+            midi_parse_message(data[i], handle_midi_message);
+        }
+    }
 }
