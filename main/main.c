@@ -1,25 +1,24 @@
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "tpic6b595.h"
+#include "esp_event.h"
+#include "led_bar.h"
+#include "sequencer.h"
+
+static esp_event_loop_handle_t app_event_loop;
 
 void app_main(void)
 {
-    tpic6b595_t shift_reg = {
-        .srck = GPIO_NUM_33,
-        .rck  = GPIO_NUM_32,
-        .ser  = GPIO_NUM_22
+    esp_event_loop_args_t loop_args = {
+        .queue_size = 8,
+        .task_name = "app_event_loop_task",
+        .task_priority = 1,
+        .task_stack_size = 2048,
+        .task_core_id = tskNO_AFFINITY
     };
 
-    if (tpic6b595_init(&shift_reg) != ESP_OK) {
-        printf("Failed to init TPIC6B595\n");
-        return;
-    }
+    ESP_ERROR_CHECK(esp_event_loop_create(&loop_args, &app_event_loop));
 
-    while (1) {
-        for (int i = 7; i >= 0; i--) {
-            tpic6b595_write(&shift_reg, 1 << i);
-            vTaskDelay(pdMS_TO_TICKS(200));
-        }
-    }
+    led_bar_init(app_event_loop);
+
+    sequencer_init(app_event_loop);
+    sequencer_play();
 }
