@@ -2,8 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "midi/midi.h"
-#include "midi/notes.h"
+#include "midi.h"
 
 #define MIDI_CH 4
 

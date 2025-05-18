@@ -1,4 +1,4 @@
-#include "midi/midi.h"
+#include "midi.h"
 
 static uart_port_t midi_uart = UART_NUM_1;
 

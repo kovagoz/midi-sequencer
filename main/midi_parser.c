@@ -3,7 +3,7 @@
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-#include "midi/parser.h"
+#include "midi.h"
 
 #define UART_PORT UART_NUM_0
 #define BUF_SIZE 1024
