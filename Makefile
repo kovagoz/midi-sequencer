@@ -34,3 +34,8 @@ down:
 .PHONY: shell
 shell:
 	ssh -i ~/.ssh/id_rsa esp@192.168.68.65
+
+.PHONY: router
+router:
+	source .pyvenv/bin/activate
+	python3 router.py
