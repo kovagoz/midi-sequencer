@@ -14,6 +14,12 @@
 static const char *TAG = "sequencer";
 static esp_event_loop_handle_t event_loop;
 
+/**
+ * @brief Initializes the UART peripheral used for MIDI input.
+ *
+ * Configures UART0 with 115200 baud (for test purposes), 8 data bits,
+ * no parity, and 1 stop bit. Also assigns the UART TX and RX pins.
+ */
 static void controller_uart_init()
 {
     const uart_config_t uart_config = {
@@ -31,6 +37,13 @@ static void controller_uart_init()
     ESP_LOGD(TAG, "UART has been initialized");
 }
 
+/**
+ * @brief Checks if the incoming MIDI message indicates the Play button was pressed.
+ *
+ * @param msg Pointer to the parsed MIDI message.
+ * @return true if the message is a Control Change for controller 107 with value 127.
+ * @return false otherwise.
+ */
 static bool controller_play_pressed(const midi_message_t *msg)
 {
     return msg->type == MIDI_MSG_CC && \
@@ -38,6 +51,13 @@ static bool controller_play_pressed(const midi_message_t *msg)
         msg->data.cc.value == 127;
 }
 
+/**
+ * @brief Checks if the incoming MIDI message indicates the Stop button was pressed.
+ *
+ * @param msg Pointer to the parsed MIDI message.
+ * @return true if the message is a Control Change for controller 106 with value 127.
+ * @return false otherwise.
+ */
 static bool controller_stop_pressed(const midi_message_t *msg)
 {
     return msg->type == MIDI_MSG_CC && \
@@ -45,6 +65,14 @@ static bool controller_stop_pressed(const midi_message_t *msg)
         msg->data.cc.value == 127;
 }
 
+/**
+ * @brief Handles incoming MIDI messages relevant to control actions.
+ *
+ * Processes Play and Stop button events and posts corresponding events
+ * to the sequencer event loop.
+ *
+ * @param msg Pointer to the MIDI message to process.
+ */
 static void controller_midi_message_handler(const midi_message_t *msg)
 {
     if (controller_play_pressed(msg)) {
@@ -60,6 +88,14 @@ static void controller_midi_message_handler(const midi_message_t *msg)
     // printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));
 }
 
+/**
+ * @brief Task that reads MIDI data from UART and parses messages.
+ *
+ * Continuously reads bytes from UART and feeds them to the MIDI parser,
+ * which invokes the controller message handler upon receiving complete messages.
+ *
+ * @param pvParameters Unused.
+ */
 static void controller_midi_receiver_task(void *pvParameters)
 {
     ESP_LOGD(TAG, "Starting MIDI receiver task");
@@ -75,6 +111,7 @@ static void controller_midi_receiver_task(void *pvParameters)
     }
 }
 
+// See documentation in controller.h
 void controller_init(esp_event_loop_handle_t app_event_loop)
 {
     event_loop = app_event_loop;
