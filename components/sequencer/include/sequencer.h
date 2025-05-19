@@ -45,6 +45,8 @@ ESP_EVENT_DECLARE_BASE(SEQUENCER_EVENT);
  */
 typedef enum {
     SEQUENCER_EVENT_STEP = 0,
+    SEQUENCER_EVENT_PLAY = 1,
+    SEQUENCER_EVENT_STOP = 2,
 } sequencer_event_id_t;
 
 /**

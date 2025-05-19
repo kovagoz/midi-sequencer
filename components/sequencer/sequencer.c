@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "esp_event.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "midi/notes.h"
@@ -7,10 +8,20 @@
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 
+static const char *TAG = "sequencer";
 static uint8_t tempo = 120; // bpm
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t event_loop;
 
+/**
+ * @brief Task function to play a hard-coded step sequence.
+ *
+ * This function runs in its own FreeRTOS task and plays a predefined
+ * sequence of musical notes (C4 to C5), emitting events for each step
+ * at a tempo defined by the global `tempo` variable.
+ *
+ * @param pvParameters Unused task parameters.
+ */
 static void sequencer_play_task(void *pvParameters)
 {
     StepSequence sequence = {
@@ -40,23 +51,105 @@ static void sequencer_play_task(void *pvParameters)
     }
 }
 
+/**
+ * @brief Event listener for the SEQUENCER_EVENT_PLAY event.
+ *
+ * Called when the sequencer receives a "play" event. It starts the
+ * sequencer by calling `sequencer_play()`.
+ *
+ * @param handler_arg Unused.
+ * @param base Event base.
+ * @param id Event ID.
+ * @param event_data Event-specific data (unused).
+ */
+static void sequencer_play_event_listener(
+    void* handler_arg,
+    esp_event_base_t base,
+    int32_t id,
+    void* event_data
+) {
+    ESP_LOGD(TAG, "Received PLAY event");
+    sequencer_play();
+}
+
+/**
+ * @brief Event listener for the SEQUENCER_EVENT_STOP event.
+ *
+ * Called when the sequencer receives a "stop" event. It stops the
+ * sequencer by calling `sequencer_stop()`.
+ *
+ * @param handler_arg Unused.
+ * @param base Event base.
+ * @param id Event ID.
+ * @param event_data Event-specific data (unused).
+ */
+static void sequencer_stop_event_listener(
+    void* handler_arg,
+    esp_event_base_t base,
+    int32_t id,
+    void* event_data
+) {
+    ESP_LOGD(TAG, "Received STOP event");
+    sequencer_stop();
+}
+
+/**
+ * @brief Initializes the sequencer
+ *
+ * Registers event handlers for the SEQUENCER_EVENT base, including
+ * handlers for PLAY and STOP events.
+ *
+ * @param loop The event loop handle to register the handlers with.
+ */
 void sequencer_init(esp_event_loop_handle_t loop)
 {
     event_loop = loop;
+
+    esp_event_handler_register_with(
+        event_loop,
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_PLAY,
+        sequencer_play_event_listener,
+        NULL
+    );
+
+    esp_event_handler_register_with(
+        event_loop,
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_STOP,
+        sequencer_stop_event_listener,
+        NULL
+    );
 }
 
+/**
+ * @brief Starts the sequencer playback.
+ *
+ * Creates a FreeRTOS task to play the step sequence if it's not already running.
+ * Logs a message and does nothing if the sequencer is already playing.
+ */
 void sequencer_play()
 {
     if (xHandle != NULL) {
+        ESP_LOGI(TAG, "Sequencer is already running");
         return;
     }
 
+    ESP_LOGI(TAG, "Creating the player task");
     xTaskCreate(sequencer_play_task, "sequencer_play", 2048, NULL, 5, &xHandle);
 }
 
+/**
+ * @brief Stops the sequencer playback.
+ *
+ * Deletes the FreeRTOS task running the sequencer, if any, and resets the task handle.
+ */
 void sequencer_stop()
 {
     if (xHandle != NULL) {
+        ESP_LOGI(TAG, "Deleting the player task");
         vTaskDelete(xHandle);
+
+        xHandle = NULL;
     }
 }

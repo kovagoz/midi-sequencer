@@ -1,0 +1,85 @@
+#include <stdbool.h>
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "midi.h"
+#include "sequencer.h"
+
+#define CONTROLLER_UART_PORT UART_NUM_0
+#define CONTROLLER_BUF_SIZE 1024
+
+static const char *TAG = "sequencer";
+static esp_event_loop_handle_t event_loop;
+
+static void controller_uart_init()
+{
+    const uart_config_t uart_config = {
+        .baud_rate = 115200, // Not MIDI standard, but works for this test
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+
+    ESP_ERROR_CHECK(uart_driver_install(CONTROLLER_UART_PORT, CONTROLLER_BUF_SIZE * 2, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(CONTROLLER_UART_PORT, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(CONTROLLER_UART_PORT, GPIO_NUM_1, GPIO_NUM_3, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+
+    ESP_LOGD(TAG, "UART has been initialized");
+}
+
+static bool controller_play_pressed(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_CC && \
+        msg->data.cc.controller == 107 && \
+        msg->data.cc.value == 127;
+}
+
+static bool controller_stop_pressed(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_CC && \
+        msg->data.cc.controller == 106 && \
+        msg->data.cc.value == 127;
+}
+
+static void controller_midi_message_handler(const midi_message_t *msg)
+{
+    if (controller_play_pressed(msg)) {
+        ESP_LOGD(TAG, "Play button pressed");
+        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_PLAY, NULL, 0, portMAX_DELAY);
+    }
+
+    if (controller_stop_pressed(msg)) {
+        ESP_LOGD(TAG, "Stop button pressed");
+        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STOP, NULL, 0, portMAX_DELAY);
+    }
+
+    // printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));
+}
+
+static void controller_midi_receiver_task(void *pvParameters)
+{
+    ESP_LOGD(TAG, "Starting MIDI receiver task");
+
+    uint8_t data[CONTROLLER_BUF_SIZE];
+
+    while (1) {
+        int len = uart_read_bytes(CONTROLLER_UART_PORT, data, CONTROLLER_BUF_SIZE, pdMS_TO_TICKS(100));
+
+        for (int i = 0; i < len; i++) {
+            midi_parse_message(data[i], controller_midi_message_handler);
+        }
+    }
+}
+
+void controller_init(esp_event_loop_handle_t app_event_loop)
+{
+    event_loop = app_event_loop;
+
+    controller_uart_init();
+
+    xTaskCreate(controller_midi_receiver_task, "controller_midi_receiver", 2048, NULL, 1, NULL);
+}

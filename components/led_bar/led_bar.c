@@ -32,6 +32,9 @@ void led_bar_init(esp_event_loop_handle_t event_loop)
         return;
     }
 
+    // Turn off all LEDs
+    tpic6b595_write(&shift_reg, 0);
+
     esp_event_handler_register_with(event_loop, SEQUENCER_EVENT,
         SEQUENCER_EVENT_STEP,
         sequencer_listener, NULL);
