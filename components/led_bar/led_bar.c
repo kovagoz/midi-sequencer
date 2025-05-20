@@ -16,15 +16,35 @@ static void led_bar_set_active_only(uint8_t pos)
     tpic6b595_write(&shift_reg, 0x80 >> pos);
 }
 
+/**
+ * @brief Sequencer listener function for handling sequencer step events.
+ *
+ * This function is called when a sequencer step event is triggered.
+ * It sets the active LED bar to the index of the current step.
+ *
+ * @param handler_arg User-provided argument passed to the event handler registration.
+ * @param base The event base associated with the event.
+ * @param id The event ID, which is not used in this function.
+ * @param event_data A pointer to the event data, which is a sequencer_step_event_t structure.
+ */
 static void sequencer_listener(
     void* handler_arg,
     esp_event_base_t base,
-    int32_t id, void* event_data
+    int32_t id,
+    void* event_data
 ) {
     sequencer_step_event_t* ev = (sequencer_step_event_t*) event_data;
     led_bar_set_active_only(ev->step_index);
 }
 
+/**
+ * @brief Initializes the LED bar using TPIC6B595 shift register.
+ *
+ * This function initializes the LED bar by setting up the TPIC6B595 shift register.
+ * It also registers an event handler for sequencer events.
+ *
+ * @param event_loop The event loop handle to register the event handler with.
+ */
 void led_bar_init(esp_event_loop_handle_t event_loop)
 {
     if (tpic6b595_init(&shift_reg) != ESP_OK) {
