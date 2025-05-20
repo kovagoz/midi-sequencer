@@ -8,6 +8,15 @@
 
 static const char *TAG = "MIDI parser";
 
+/**
+ * @brief Enumeration of the states of the FSM.
+ */
+typedef enum {
+    MIDI_FSM_WAIT_STATUS,
+    MIDI_FSM_WAIT_DATA1,
+    MIDI_FSM_WAIT_DATA2,
+} midi_parser_state_t;
+
 const char *midi_note_name(uint8_t note_number)
 {
     static char name[4];  // Enough for "C#4" + null
