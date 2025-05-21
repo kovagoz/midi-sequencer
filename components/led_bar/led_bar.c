@@ -1,14 +1,20 @@
 #include <stdint.h>
 #include "driver/gpio.h"
 #include "esp_event.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "led_bar.h"
 #include "sequencer.h"
 #include "tpic6b595.h"
 
+#define BLINK_DELAY_MS 250  // 2Hz = 500ms cycle
+
+static TaskHandle_t xHandle = NULL;
 static tpic6b595_t shift_reg = {
     .srck = GPIO_NUM_33,
     .rck  = GPIO_NUM_32,
-    .ser  = GPIO_NUM_22
+    .ser  = GPIO_NUM_23,
+    .oe   = GPIO_NUM_22
 };
 
 static void led_bar_set_active_only(uint8_t pos)
@@ -35,6 +41,37 @@ static void sequencer_listener(
 ) {
     sequencer_step_event_t* ev = (sequencer_step_event_t*) event_data;
     led_bar_set_active_only(ev->step_index);
+}
+
+static void led_bar_blink_task(void *pvParameters)
+{
+    while (1) {
+        // Because output is enabled by default, we start the blink
+        // with turning the LEDs off.
+        tpic6b595_output_disable(&shift_reg);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY_MS));
+
+        tpic6b595_output_enable(&shift_reg);
+        vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY_MS));
+    }
+}
+
+static void led_bar_start_blinking()
+{
+    if (xHandle == NULL) {
+        xTaskCreate(led_bar_blink_task, "led_bar_blink", 2048, NULL, 5, &xHandle);
+    }
+}
+
+static void led_bar_stop_blinking()
+{
+    if (xHandle != NULL) {
+        vTaskDelete(xHandle);
+        xHandle = NULL;
+    }
+
+    // Left the output enabled after the blinking
+    tpic6b595_output_enable(&shift_reg);
 }
 
 /**
