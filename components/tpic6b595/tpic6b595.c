@@ -20,7 +20,7 @@ esp_err_t tpic6b595_init(const tpic6b595_t *dev) {
 
     gpio_config_t io_conf = {
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = (1ULL << dev->srck) | (1ULL << dev->rck) | (1ULL << dev->ser),
+        .pin_bit_mask = (1ULL << dev->srck) | (1ULL << dev->rck) | (1ULL << dev->ser) | (1ULL << dev->oe),
         .intr_type = GPIO_INTR_DISABLE
     };
 
@@ -35,6 +35,8 @@ esp_err_t tpic6b595_init(const tpic6b595_t *dev) {
     gpio_set_level(dev->rck, 0);
     gpio_set_level(dev->ser, 0);
 
+    tpic6b595_output_enable(dev);
+
     return ESP_OK;
 }
 
@@ -43,10 +45,22 @@ void tpic6b595_write(const tpic6b595_t *dev, uint8_t data) {
         return;
     }
 
+    // Load data into the shift register
     for (int i = 7; i >= 0; i--) {
         gpio_set_level(dev->ser, (data >> i) & 0x01);
         pulse_gpio(dev->srck);
     }
 
+    // Transfer data to the output buffer
     pulse_gpio(dev->rck);
+}
+
+void tpic6b595_output_enable(const tpic6b595_t *dev)
+{
+    ESP_ERROR_CHECK(gpio_set_level(dev->oe, 0));
+}
+
+void tpic6b595_output_disable(const tpic6b595_t *dev)
+{
+    ESP_ERROR_CHECK(gpio_set_level(dev->oe, 1));
 }
