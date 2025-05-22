@@ -9,9 +9,41 @@
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 
 static const char *TAG = "sequencer";
+static uint8_t step_index = 0;
 static uint8_t tempo = 120; // bpm
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t event_loop;
+
+/**
+ * @brief Advances the sequencer to the next step.
+ *
+ * This function increments the current step index of the sequencer.
+ * If the step index reaches the end of the sequence, it wraps around to the beginning.
+ *
+ * @note
+ * This function does not take any input parameters and does not return any value.
+ * It modifies the global state of the sequencer.
+ *
+ * @sa sequencer_reset
+ */
+static void sequencer_step_forward()
+{
+    step_index = (step_index + 1) % STEP_SEQUENCE_LENGTH;
+}
+
+/**
+ * @brief Resets the sequencer to its initial state.
+ *
+ * This function resets the sequencer by setting the step index to 0.
+ *
+ * @note
+ * This function does not take any input parameters and does not return
+ * any value. It modifies the global variable `step_index` directly.
+ */
+static void sequencer_reset()
+{
+    step_index = 0;
+}
 
 /**
  * @brief Task function to play a hard-coded step sequence.
@@ -37,17 +69,19 @@ static void sequencer_play_task(void *pvParameters)
 
     uint32_t step_duration_ms = 60000 / tempo;
 
+    sequencer_reset();
+
     while (1) {
-        for (int i = 0; i < STEP_SEQUENCE_LENGTH; i++) {
-            sequencer_step_event_t ev = {
-                .step = &sequence[i],
-                .step_index = i
-            };
+        sequencer_step_event_t ev = {
+            .step = &sequence[step_index],
+            .step_index = step_index
+        };
 
-            esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STEP, &ev, sizeof(ev), portMAX_DELAY);
+        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STEP, &ev, sizeof(ev), portMAX_DELAY);
 
-            vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
-        }
+        sequencer_step_forward();
+
+        vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
     }
 }
 
