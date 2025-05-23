@@ -90,21 +90,21 @@ static void sequencer_play_task(void *pvParameters)
  * @brief Event listener for the SEQUENCER_EVENT_PLAY event.
  *
  * Called when the sequencer receives a "play" event. It starts the
- * sequencer by calling `sequencer_play()`.
+ * sequencer by calling `sequencer_start()`.
  *
  * @param handler_arg Unused.
  * @param base Event base.
  * @param id Event ID.
  * @param event_data Event-specific data (unused).
  */
-static void sequencer_play_event_listener(
+static void sequencer_start_event_listener(
     void* handler_arg,
     esp_event_base_t base,
     int32_t id,
     void* event_data
 ) {
     ESP_LOGD(TAG, "Received PLAY event");
-    sequencer_play();
+    sequencer_start();
 }
 
 /**
@@ -144,7 +144,7 @@ void sequencer_init(esp_event_loop_handle_t loop)
         event_loop,
         CONTROLLER_EVENT,
         CONTROLLER_EVENT_PLAY,
-        sequencer_play_event_listener,
+        sequencer_start_event_listener,
         NULL
     );
 
@@ -163,7 +163,7 @@ void sequencer_init(esp_event_loop_handle_t loop)
  * Creates a FreeRTOS task to play the step sequence if it's not already running.
  * Logs a message and does nothing if the sequencer is already playing.
  */
-void sequencer_play()
+void sequencer_start()
 {
     if (xHandle != NULL) {
         ESP_LOGI(TAG, "Sequencer is already running");
@@ -171,7 +171,7 @@ void sequencer_play()
     }
 
     ESP_LOGI(TAG, "Creating the player task");
-    xTaskCreate(sequencer_play_task, "sequencer_play", 2048, NULL, 5, &xHandle);
+    xTaskCreate(sequencer_play_task, "sequencer_start", 2048, NULL, 5, &xHandle);
 }
 
 /**
