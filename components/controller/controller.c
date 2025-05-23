@@ -78,12 +78,10 @@ static bool controller_stop_pressed(const midi_message_t *msg)
 static void controller_midi_message_handler(const midi_message_t *msg)
 {
     if (controller_play_pressed(msg)) {
-        ESP_LOGD(TAG, "Play button pressed");
         esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_PLAY, NULL, 0, portMAX_DELAY);
     }
 
     if (controller_stop_pressed(msg)) {
-        ESP_LOGD(TAG, "Stop button pressed");
         esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_STOP, NULL, 0, portMAX_DELAY);
     }
 
