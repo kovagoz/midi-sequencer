@@ -63,5 +63,5 @@ typedef struct {
 // --- Function signatures ----------------------
 
 void sequencer_init();
-void sequencer_play();
+void sequencer_start();
 void sequencer_stop();
