@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "controller.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -141,16 +142,16 @@ void sequencer_init(esp_event_loop_handle_t loop)
 
     esp_event_handler_register_with(
         event_loop,
-        SEQUENCER_EVENT,
-        SEQUENCER_EVENT_PLAY,
+        CONTROLLER_EVENT,
+        CONTROLLER_EVENT_PLAY,
         sequencer_play_event_listener,
         NULL
     );
 
     esp_event_handler_register_with(
         event_loop,
-        SEQUENCER_EVENT,
-        SEQUENCER_EVENT_STOP,
+        CONTROLLER_EVENT,
+        CONTROLLER_EVENT_STOP,
         sequencer_stop_event_listener,
         NULL
     );

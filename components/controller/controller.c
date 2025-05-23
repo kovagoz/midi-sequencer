@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "controller.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_event.h"
@@ -6,12 +7,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "midi.h"
-#include "sequencer.h"
 
 #define CONTROLLER_UART_PORT UART_NUM_0
 #define CONTROLLER_BUF_SIZE 1024
 
-static const char *TAG = "sequencer";
+ESP_EVENT_DEFINE_BASE(CONTROLLER_EVENT);
+
+static const char *TAG = "controller";
 static esp_event_loop_handle_t event_loop;
 
 /**
@@ -69,7 +71,7 @@ static bool controller_stop_pressed(const midi_message_t *msg)
  * @brief Handles incoming MIDI messages relevant to control actions.
  *
  * Processes Play and Stop button events and posts corresponding events
- * to the sequencer event loop.
+ * to the application event loop.
  *
  * @param msg Pointer to the MIDI message to process.
  */
@@ -77,12 +79,12 @@ static void controller_midi_message_handler(const midi_message_t *msg)
 {
     if (controller_play_pressed(msg)) {
         ESP_LOGD(TAG, "Play button pressed");
-        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_PLAY, NULL, 0, portMAX_DELAY);
+        esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_PLAY, NULL, 0, portMAX_DELAY);
     }
 
     if (controller_stop_pressed(msg)) {
         ESP_LOGD(TAG, "Stop button pressed");
-        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STOP, NULL, 0, portMAX_DELAY);
+        esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_STOP, NULL, 0, portMAX_DELAY);
     }
 
     // printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));

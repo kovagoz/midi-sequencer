@@ -2,6 +2,14 @@
 
 #include "esp_event.h"
 
+ESP_EVENT_DECLARE_BASE(CONTROLLER_EVENT);
+
+enum {
+    CONTROLLER_EVENT_STOP = 0,
+    CONTROLLER_EVENT_PLAY = 1,
+    CONTROLLER_EVENT_REC  = 2,
+};
+
 /**
  * @brief Initializes the controller component.
  *

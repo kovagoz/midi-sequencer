@@ -43,11 +43,11 @@ ESP_EVENT_DECLARE_BASE(SEQUENCER_EVENT);
  *
  * Defines the types of events that the sequencer can emit.
  */
-typedef enum {
+enum {
     SEQUENCER_EVENT_STEP = 0,
     SEQUENCER_EVENT_PLAY = 1,
     SEQUENCER_EVENT_STOP = 2,
-} sequencer_event_id_t;
+};
 
 /**
  * @brief Payload for a SEQUENCER_EVENT_STEP event.
