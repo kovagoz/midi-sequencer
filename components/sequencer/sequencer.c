@@ -73,7 +73,14 @@ static void sequencer_play_task(void *pvParameters)
     sequencer_reset();
 
     while (1) {
-        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STEP_SELECT, &step_index, sizeof(step_index), portMAX_DELAY);
+        esp_event_post_to(
+            event_loop,
+            SEQUENCER_EVENT,
+            SEQUENCER_EVENT_STEP_SELECT,
+            &step_index,
+            sizeof(step_index),
+            portMAX_DELAY
+        );
 
         vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
 
@@ -82,45 +89,31 @@ static void sequencer_play_task(void *pvParameters)
 }
 
 /**
- * @brief Event listener for the CONTROLLER_EVENT_PLAY event.
- *
- * Called when the sequencer receives a "play" event. It starts the
- * sequencer by calling `sequencer_start()`.
+ * @brief Listener for the CONTROLLER_EVENT based events.
  *
  * @param handler_arg Unused.
  * @param base Event base.
  * @param id Event ID.
  * @param event_data Event-specific data (unused).
  */
-static void sequencer_start_event_listener(
+static void controller_event_handler(
     void* handler_arg,
     esp_event_base_t base,
     int32_t id,
     void* event_data
 ) {
-    ESP_LOGD(TAG, "Received PLAY event");
-    sequencer_start();
-}
+    switch (id) {
+        case CONTROLLER_EVENT_PLAY:
+            sequencer_start();
+            break;
 
-/**
- * @brief Event listener for the CONTROLLER_EVENT_STOP event.
- *
- * Called when the sequencer receives a "stop" event. It stops the
- * sequencer by calling `sequencer_stop()`.
- *
- * @param handler_arg Unused.
- * @param base Event base.
- * @param id Event ID.
- * @param event_data Event-specific data (unused).
- */
-static void sequencer_stop_event_listener(
-    void* handler_arg,
-    esp_event_base_t base,
-    int32_t id,
-    void* event_data
-) {
-    ESP_LOGD(TAG, "Received STOP event");
-    sequencer_stop();
+        case CONTROLLER_EVENT_STOP:
+            sequencer_stop();
+            break;
+
+        default:
+            break;
+    }
 }
 
 /**
@@ -138,16 +131,8 @@ void sequencer_init(esp_event_loop_handle_t loop)
     esp_event_handler_register_with(
         event_loop,
         CONTROLLER_EVENT,
-        CONTROLLER_EVENT_PLAY,
-        sequencer_start_event_listener,
-        NULL
-    );
-
-    esp_event_handler_register_with(
-        event_loop,
-        CONTROLLER_EVENT,
-        CONTROLLER_EVENT_STOP,
-        sequencer_stop_event_listener,
+        ESP_EVENT_ANY_ID,
+        controller_event_handler,
         NULL
     );
 }
