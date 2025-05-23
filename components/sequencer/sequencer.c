@@ -87,7 +87,7 @@ static void sequencer_play_task(void *pvParameters)
 }
 
 /**
- * @brief Event listener for the SEQUENCER_EVENT_PLAY event.
+ * @brief Event listener for the CONTROLLER_EVENT_PLAY event.
  *
  * Called when the sequencer receives a "play" event. It starts the
  * sequencer by calling `sequencer_start()`.
@@ -108,7 +108,7 @@ static void sequencer_start_event_listener(
 }
 
 /**
- * @brief Event listener for the SEQUENCER_EVENT_STOP event.
+ * @brief Event listener for the CONTROLLER_EVENT_STOP event.
  *
  * Called when the sequencer receives a "stop" event. It stops the
  * sequencer by calling `sequencer_stop()`.
