@@ -57,32 +57,27 @@ static void sequencer_reset()
  */
 static void sequencer_play_task(void *pvParameters)
 {
-    StepSequence sequence = {
-        {NOTE_C4},
-        {NOTE_D4},
-        {NOTE_E4},
-        {NOTE_F4},
-        {NOTE_G4},
-        {NOTE_A4},
-        {NOTE_B4},
-        {NOTE_C5}
-    };
+    // StepSequence sequence = {
+    //     {NOTE_C4},
+    //     {NOTE_D4},
+    //     {NOTE_E4},
+    //     {NOTE_F4},
+    //     {NOTE_G4},
+    //     {NOTE_A4},
+    //     {NOTE_B4},
+    //     {NOTE_C5}
+    // };
 
     uint32_t step_duration_ms = 60000 / tempo;
 
     sequencer_reset();
 
     while (1) {
-        sequencer_step_event_t ev = {
-            .step = &sequence[step_index],
-            .step_index = step_index
-        };
-
-        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STEP, &ev, sizeof(ev), portMAX_DELAY);
-
-        sequencer_step_forward();
+        esp_event_post_to(event_loop, SEQUENCER_EVENT, SEQUENCER_EVENT_STEP_SELECT, &step_index, sizeof(step_index), portMAX_DELAY);
 
         vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
+
+        sequencer_step_forward();
     }
 }
 

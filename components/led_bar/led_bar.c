@@ -39,8 +39,8 @@ static void sequencer_listener(
     int32_t id,
     void* event_data
 ) {
-    sequencer_step_event_t* ev = (sequencer_step_event_t*) event_data;
-    led_bar_set_active_only(ev->step_index);
+    uint8_t step_index = *(uint8_t*) event_data;
+    led_bar_set_active_only(step_index);
 }
 
 static void led_bar_blink_task(void *pvParameters)
@@ -92,7 +92,11 @@ void led_bar_init(esp_event_loop_handle_t event_loop)
     // Turn off all LEDs
     tpic6b595_write(&shift_reg, 0);
 
-    esp_event_handler_register_with(event_loop, SEQUENCER_EVENT,
-        SEQUENCER_EVENT_STEP,
-        sequencer_listener, NULL);
+    esp_event_handler_register_with(
+        event_loop,
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_STEP_SELECT,
+        sequencer_listener,
+        NULL
+    );
 }
