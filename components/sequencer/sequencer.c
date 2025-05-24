@@ -5,15 +5,23 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "midi/notes.h"
+#include "midi/parser.h"
 #include "sequencer.h"
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
+
+typedef enum {
+    SEQUENCER_STATE_STOP,
+    SEQUENCER_STATE_PLAY,
+    SEQUENCER_STATE_REC,
+} sequencer_state_t;
 
 static const char *TAG = "sequencer";
 static uint8_t step_index = 0;
 static uint8_t tempo = 120; // bpm
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t event_loop;
+static sequencer_state_t current_state = SEQUENCER_STATE_STOP;
 
 //--------------------------------------
 //  Private functions
@@ -93,6 +101,70 @@ static void sequencer_play_task(void *pvParameters)
 }
 
 /**
+ * @brief Starts the sequencer playback.
+ *
+ * Creates a FreeRTOS task to play the step sequence if it's not already running.
+ * Logs a message and does nothing if the sequencer is already playing.
+ */
+static void sequencer_start_playing()
+{
+    current_state = SEQUENCER_STATE_PLAY;
+
+    if (xHandle != NULL) {
+        ESP_LOGI(TAG, "Sequencer is already running");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Creating the player task");
+    xTaskCreate(sequencer_play_task, "sequencer_start", 2048, NULL, 5, &xHandle);
+}
+
+/**
+ * @brief Stops the sequencer playback.
+ *
+ * Deletes the FreeRTOS task running the sequencer, if any, and resets the task handle.
+ */
+static void sequencer_stop_playing()
+{
+    current_state = SEQUENCER_STATE_STOP;
+
+    if (xHandle != NULL) {
+        ESP_LOGI(TAG, "Deleting the player task");
+        vTaskDelete(xHandle);
+
+        xHandle = NULL;
+    }
+}
+
+static void sequencer_start_recording()
+{
+    current_state = SEQUENCER_STATE_REC;
+
+    sequencer_reset();
+
+    ESP_LOGI(TAG, "Recording started");
+    // esp_event_post_to(
+    //     event_loop,
+    //     SEQUENCER_EVENT,
+    //     SEQUENCER_EVENT_STEP_SELECT,
+    //     &step_index,
+    //     sizeof(step_index),
+    //     portMAX_DELAY
+    // );
+}
+
+static void sequencer_stop_recording()
+{
+    current_state = SEQUENCER_STATE_STOP;
+}
+
+static void sequencer_record_note(uint32_t note)
+{
+    ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
+    sequencer_step_forward();
+}
+
+/**
  * @brief Listener for the CONTROLLER_EVENT based events.
  *
  * @param handler_arg Unused.
@@ -108,11 +180,37 @@ static void controller_event_handler(
 ) {
     switch (id) {
         case CONTROLLER_EVENT_PLAY:
-            sequencer_start();
+            if (current_state == SEQUENCER_STATE_STOP) {
+                sequencer_start_playing();
+            }
             break;
 
         case CONTROLLER_EVENT_STOP:
-            sequencer_stop();
+            switch (current_state) {
+                case SEQUENCER_STATE_PLAY:
+                    sequencer_stop_playing();
+                    break;
+
+                case SEQUENCER_STATE_REC:
+                    sequencer_stop_recording();
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case CONTROLLER_EVENT_REC:
+            if (current_state == SEQUENCER_STATE_STOP) {
+                sequencer_start_recording();
+            }
+            break;
+
+        case CONTROLLER_EVENT_NOTE:
+            if (current_state == SEQUENCER_STATE_REC) {
+                uint8_t note = *(uint8_t*) event_data;
+                sequencer_record_note(note);
+            }
             break;
 
         default:
@@ -143,36 +241,4 @@ void sequencer_init(esp_event_loop_handle_t loop)
         controller_event_handler,
         NULL
     );
-}
-
-/**
- * @brief Starts the sequencer playback.
- *
- * Creates a FreeRTOS task to play the step sequence if it's not already running.
- * Logs a message and does nothing if the sequencer is already playing.
- */
-void sequencer_start()
-{
-    if (xHandle != NULL) {
-        ESP_LOGI(TAG, "Sequencer is already running");
-        return;
-    }
-
-    ESP_LOGI(TAG, "Creating the player task");
-    xTaskCreate(sequencer_play_task, "sequencer_start", 2048, NULL, 5, &xHandle);
-}
-
-/**
- * @brief Stops the sequencer playback.
- *
- * Deletes the FreeRTOS task running the sequencer, if any, and resets the task handle.
- */
-void sequencer_stop()
-{
-    if (xHandle != NULL) {
-        ESP_LOGI(TAG, "Deleting the player task");
-        vTaskDelete(xHandle);
-
-        xHandle = NULL;
-    }
 }

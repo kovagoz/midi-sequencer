@@ -1,7 +1,7 @@
 port := /dev/ttyUSB0
 baud := 115200
 
-vm := ESP-IDF
+vm := idf
 
 .PHONY: build
 build:

@@ -67,6 +67,18 @@ static bool controller_stop_pressed(const midi_message_t *msg)
         msg->data.cc.value == 127;
 }
 
+static bool controller_rec_pressed(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_CC && \
+        msg->data.cc.controller == 108 && \
+        msg->data.cc.value == 127;
+}
+
+static bool controller_note_pressed(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_NOTE_ON;
+}
+
 /**
  * @brief Handles incoming MIDI messages relevant to control actions.
  *
@@ -79,10 +91,19 @@ static void controller_midi_message_handler(const midi_message_t *msg)
 {
     if (controller_play_pressed(msg)) {
         esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_PLAY, NULL, 0, portMAX_DELAY);
-    }
-
-    if (controller_stop_pressed(msg)) {
+    } else if (controller_stop_pressed(msg)) {
         esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_STOP, NULL, 0, portMAX_DELAY);
+    } else if (controller_rec_pressed(msg)) {
+        esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_REC, NULL, 0, portMAX_DELAY);
+    } else if (controller_note_pressed(msg)) {
+        esp_event_post_to(
+            event_loop,
+            CONTROLLER_EVENT,
+            CONTROLLER_EVENT_NOTE,
+            &msg->data.note.note,
+            sizeof(msg->data.note.note),
+            portMAX_DELAY
+        );
     }
 
     // printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));
