@@ -4,12 +4,12 @@
 
 ESP_EVENT_DECLARE_BASE(CONTROLLER_EVENT);
 
-enum {
+typedef enum {
     CONTROLLER_EVENT_STOP,
     CONTROLLER_EVENT_PLAY,
     CONTROLLER_EVENT_REC,
     CONTROLLER_EVENT_NOTE,
-};
+} controller_event_t;
 
 /**
  * @brief Initializes the controller component.

@@ -7,21 +7,16 @@
 #include "midi/notes.h"
 #include "midi/parser.h"
 #include "sequencer.h"
+#include "sequencer_fsm.h"
+#include "sequencer_fsm_internal.h"
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
-
-typedef enum {
-    SEQUENCER_STATE_STOP,
-    SEQUENCER_STATE_PLAY,
-    SEQUENCER_STATE_REC,
-} sequencer_state_t;
 
 static const char *TAG = "sequencer";
 static uint8_t step_index = 0;
 static uint8_t tempo = 120; // bpm
 static TaskHandle_t xHandle = NULL;
-static esp_event_loop_handle_t event_loop;
-static sequencer_state_t current_state = SEQUENCER_STATE_STOP;
+static esp_event_loop_handle_t sequencer_event_loop;
 
 //--------------------------------------
 //  Private functions
@@ -86,7 +81,7 @@ static void sequencer_play_task(void *pvParameters)
 
     while (1) {
         esp_event_post_to(
-            event_loop,
+            sequencer_event_loop,
             SEQUENCER_EVENT,
             SEQUENCER_EVENT_STEP_SELECT,
             &step_index,
@@ -106,10 +101,8 @@ static void sequencer_play_task(void *pvParameters)
  * Creates a FreeRTOS task to play the step sequence if it's not already running.
  * Logs a message and does nothing if the sequencer is already playing.
  */
-static void sequencer_start_playing()
+static void on_enter_play()
 {
-    current_state = SEQUENCER_STATE_PLAY;
-
     if (xHandle != NULL) {
         ESP_LOGI(TAG, "Sequencer is already running");
         return;
@@ -124,10 +117,8 @@ static void sequencer_start_playing()
  *
  * Deletes the FreeRTOS task running the sequencer, if any, and resets the task handle.
  */
-static void sequencer_stop_playing()
+static void on_exit_play()
 {
-    current_state = SEQUENCER_STATE_STOP;
-
     if (xHandle != NULL) {
         ESP_LOGI(TAG, "Deleting the player task");
         vTaskDelete(xHandle);
@@ -136,86 +127,40 @@ static void sequencer_stop_playing()
     }
 }
 
-static void sequencer_start_recording()
-{
-    current_state = SEQUENCER_STATE_REC;
-
-    sequencer_reset();
-
-    ESP_LOGI(TAG, "Recording started");
-    // esp_event_post_to(
-    //     event_loop,
-    //     SEQUENCER_EVENT,
-    //     SEQUENCER_EVENT_STEP_SELECT,
-    //     &step_index,
-    //     sizeof(step_index),
-    //     portMAX_DELAY
-    // );
-}
-
-static void sequencer_stop_recording()
-{
-    current_state = SEQUENCER_STATE_STOP;
-}
-
-static void sequencer_record_note(uint32_t note)
-{
+static void on_note_event(
+    void *arg,
+    esp_event_base_t base,
+    int32_t id,
+    void *event_data
+) {
+    uint8_t note = *(uint8_t *) event_data;
     ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
     sequencer_step_forward();
 }
 
-/**
- * @brief Listener for the CONTROLLER_EVENT based events.
- *
- * @param handler_arg Unused.
- * @param base Event base.
- * @param id Event ID.
- * @param event_data Event-specific data (unused).
- */
-static void controller_event_handler(
-    void* handler_arg,
-    esp_event_base_t base,
-    int32_t id,
-    void* event_data
-) {
-    switch (id) {
-        case CONTROLLER_EVENT_PLAY:
-            if (current_state == SEQUENCER_STATE_STOP) {
-                sequencer_start_playing();
-            }
-            break;
+static void on_enter_record()
+{
+    sequencer_reset();
 
-        case CONTROLLER_EVENT_STOP:
-            switch (current_state) {
-                case SEQUENCER_STATE_PLAY:
-                    sequencer_stop_playing();
-                    break;
+    ESP_LOGI(TAG, "Recording started");
 
-                case SEQUENCER_STATE_REC:
-                    sequencer_stop_recording();
-                    break;
+    esp_event_handler_register_with(
+        sequencer_event_loop,
+        CONTROLLER_EVENT,
+        CONTROLLER_EVENT_NOTE,
+        on_note_event,
+        NULL
+    );
+}
 
-                default:
-                    break;
-            }
-            break;
-
-        case CONTROLLER_EVENT_REC:
-            if (current_state == SEQUENCER_STATE_STOP) {
-                sequencer_start_recording();
-            }
-            break;
-
-        case CONTROLLER_EVENT_NOTE:
-            if (current_state == SEQUENCER_STATE_REC) {
-                uint8_t note = *(uint8_t*) event_data;
-                sequencer_record_note(note);
-            }
-            break;
-
-        default:
-            break;
-    }
+static void on_exit_record()
+{
+    esp_event_handler_unregister_with(
+        sequencer_event_loop,
+        CONTROLLER_EVENT,
+        CONTROLLER_EVENT_NOTE,
+        on_note_event
+    );
 }
 
 //--------------------------------------
@@ -230,15 +175,11 @@ static void controller_event_handler(
  *
  * @param loop The event loop handle to register the handlers with.
  */
-void sequencer_init(esp_event_loop_handle_t loop)
+void sequencer_init(esp_event_loop_handle_t event_loop)
 {
-    event_loop = loop;
+    sequencer_event_loop = event_loop;
 
-    esp_event_handler_register_with(
-        event_loop,
-        CONTROLLER_EVENT,
-        ESP_EVENT_ANY_ID,
-        controller_event_handler,
-        NULL
-    );
+    sequencer_fsm_init(event_loop);
+    sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
+    sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
 }

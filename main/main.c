@@ -12,7 +12,7 @@ static void create_event_loop()
         .queue_size = 8,
         .task_name = "app_event_loop_task",
         .task_priority = 1,
-        .task_stack_size = 2048,
+        .task_stack_size = 4096,
         .task_core_id = tskNO_AFFINITY
     };
 
