@@ -15,6 +15,10 @@ static uint8_t tempo = 120; // bpm
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t event_loop;
 
+//--------------------------------------
+//  Private functions
+//--------------------------------------
+
 /**
  * @brief Advances the sequencer to the next step.
  *
@@ -115,6 +119,10 @@ static void controller_event_handler(
             break;
     }
 }
+
+//--------------------------------------
+//  Public functions
+//--------------------------------------
 
 /**
  * @brief Initializes the sequencer
