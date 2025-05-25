@@ -22,6 +22,20 @@ static esp_event_loop_handle_t sequencer_event_loop;
 //  Private functions
 //--------------------------------------
 
+static void sequencer_step_select(uint8_t pos)
+{
+    step_index = pos;
+
+    esp_event_post_to(
+        sequencer_event_loop,
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_STEP_SELECT,
+        &step_index,
+        sizeof(step_index),
+        portMAX_DELAY
+    );
+}
+
 /**
  * @brief Advances the sequencer to the next step.
  *
@@ -36,7 +50,7 @@ static esp_event_loop_handle_t sequencer_event_loop;
  */
 static void sequencer_step_forward()
 {
-    step_index = (step_index + 1) % STEP_SEQUENCE_LENGTH;
+    sequencer_step_select((step_index + 1) % STEP_SEQUENCE_LENGTH);
 }
 
 /**
@@ -50,7 +64,7 @@ static void sequencer_step_forward()
  */
 static void sequencer_reset()
 {
-    step_index = 0;
+    sequencer_step_select(0);
 }
 
 /**
@@ -80,17 +94,7 @@ static void sequencer_play_task(void *pvParameters)
     sequencer_reset();
 
     while (1) {
-        esp_event_post_to(
-            sequencer_event_loop,
-            SEQUENCER_EVENT,
-            SEQUENCER_EVENT_STEP_SELECT,
-            &step_index,
-            sizeof(step_index),
-            portMAX_DELAY
-        );
-
         vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
-
         sequencer_step_forward();
     }
 }
