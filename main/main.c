@@ -3,6 +3,7 @@
 #include "controller.h"
 #include "led_bar.h"
 #include "sequencer.h"
+#include "task_monitor.h"
 
 static esp_event_loop_handle_t event_loop;
 
@@ -26,4 +27,6 @@ void app_main(void)
     led_bar_init(event_loop);
     controller_init(event_loop);
     sequencer_init(event_loop);
+
+    task_monitor_start();
 }
