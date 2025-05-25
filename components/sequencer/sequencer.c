@@ -109,7 +109,7 @@ static void on_enter_play()
     }
 
     ESP_LOGI(TAG, "Creating the player task");
-    xTaskCreate(sequencer_play_task, "sequencer_start", 2048, NULL, 5, &xHandle);
+    xTaskCreate(sequencer_play_task, "sequencer_play", 2048, NULL, 5, &xHandle);
 }
 
 /**
@@ -127,40 +127,19 @@ static void on_exit_play()
     }
 }
 
-static void on_note_event(
-    void *arg,
-    esp_event_base_t base,
-    int32_t id,
-    void *event_data
-) {
-    uint8_t note = *(uint8_t *) event_data;
-    ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
-    sequencer_step_forward();
-}
-
 static void on_enter_record()
 {
     sequencer_reset();
-
     ESP_LOGI(TAG, "Recording started");
-
-    esp_event_handler_register_with(
-        sequencer_event_loop,
-        CONTROLLER_EVENT,
-        CONTROLLER_EVENT_NOTE,
-        on_note_event,
-        NULL
-    );
 }
 
-static void on_exit_record()
+static void on_note_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
-    esp_event_handler_unregister_with(
-        sequencer_event_loop,
-        CONTROLLER_EVENT,
-        CONTROLLER_EVENT_NOTE,
-        on_note_event
-    );
+    if (sequencer_fsm_get_state() == SEQUENCER_STATE_REC) {
+        uint8_t note = *(uint8_t *) data;
+        ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
+        sequencer_step_forward();
+    }
 }
 
 //--------------------------------------
@@ -181,5 +160,7 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
 
     sequencer_fsm_init(event_loop);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
-    sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
+    sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, NULL);
+
+    esp_event_handler_register_with(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event, NULL);
 }

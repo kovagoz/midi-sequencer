@@ -4,7 +4,7 @@
 #include "led_bar.h"
 #include "sequencer.h"
 
-static esp_event_loop_handle_t app_event_loop;
+static esp_event_loop_handle_t event_loop;
 
 static void create_event_loop()
 {
@@ -16,14 +16,14 @@ static void create_event_loop()
         .task_core_id = tskNO_AFFINITY
     };
 
-    ESP_ERROR_CHECK(esp_event_loop_create(&loop_args, &app_event_loop));
+    ESP_ERROR_CHECK(esp_event_loop_create(&loop_args, &event_loop));
 }
 
 void app_main(void)
 {
     create_event_loop();
 
-    led_bar_init(app_event_loop);
-    controller_init(app_event_loop);
-    sequencer_init(app_event_loop);
+    led_bar_init(event_loop);
+    controller_init(event_loop);
+    sequencer_init(event_loop);
 }

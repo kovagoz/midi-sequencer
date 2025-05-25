@@ -94,7 +94,7 @@ static void sequencer_fsm_event_handler(
         }
     }
 
-    ESP_LOGW(TAG, "Invalid transition from %d on event %d", current_state, event);
+    // ESP_LOGW(TAG, "Invalid transition from %d on event %d", current_state, event);
 }
 
 void sequencer_fsm_init(esp_event_loop_handle_t event_loop)
