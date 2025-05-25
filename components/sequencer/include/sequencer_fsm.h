@@ -1,9 +1,5 @@
 #pragma once
 
-#include "esp_event.h"
-
-ESP_EVENT_DECLARE_BASE(SEQUENCER_STATE_CHANGE_EVENT_BASE);
-
 typedef enum {
     SEQUENCER_STATE_STOP,
     SEQUENCER_STATE_PLAY,

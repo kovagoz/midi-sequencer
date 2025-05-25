@@ -44,7 +44,8 @@ ESP_EVENT_DECLARE_BASE(SEQUENCER_EVENT);
  * Defines the types of events that the sequencer can emit.
  */
 enum {
-    SEQUENCER_EVENT_STEP_SELECT = 0,
+    SEQUENCER_EVENT_STATE_CHANGE,
+    SEQUENCER_EVENT_STEP_SELECT,
 };
 
 /**

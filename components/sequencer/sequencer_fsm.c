@@ -29,8 +29,6 @@ static const fsm_transition_t fsm_table[] = {
     { SEQUENCER_STATE_REC,  CONTROLLER_EVENT_STOP, SEQUENCER_STATE_STOP },
 };
 
-ESP_EVENT_DEFINE_BASE(SEQUENCER_STATE_CHANGE_EVENT_BASE);
-
 static void sequencer_fsm_broadcast_state_change(
     sequencer_state_t previous_state,
     sequencer_state_t current_state
@@ -42,8 +40,8 @@ static void sequencer_fsm_broadcast_state_change(
 
     esp_event_post_to(
         fsm_event_loop,
-        SEQUENCER_STATE_CHANGE_EVENT_BASE,
-        current_state,  // Event ID is the new state
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_STATE_CHANGE,
         &ev,
         sizeof(ev),
         portMAX_DELAY
