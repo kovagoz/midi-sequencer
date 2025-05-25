@@ -124,7 +124,7 @@ static void controller_midi_receiver_task(void *pvParameters)
     uint8_t data[CONTROLLER_BUF_SIZE];
 
     while (1) {
-        int len = uart_read_bytes(CONTROLLER_UART_PORT, data, CONTROLLER_BUF_SIZE, pdMS_TO_TICKS(100));
+        int len = uart_read_bytes(CONTROLLER_UART_PORT, data, CONTROLLER_BUF_SIZE, pdMS_TO_TICKS(10));
 
         for (int i = 0; i < len; i++) {
             midi_parse_message(data[i], controller_midi_message_handler);
