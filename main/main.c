@@ -3,7 +3,9 @@
 #include "controller.h"
 #include "led_bar.h"
 #include "sequencer.h"
+#if CONFIG_FREERTOS_USE_TRACE_FACILITY
 #include "task_monitor.h"
+#endif
 
 static esp_event_loop_handle_t event_loop;
 
@@ -28,5 +30,7 @@ void app_main(void)
     controller_init(event_loop);
     sequencer_init(event_loop);
 
+#if CONFIG_FREERTOS_USE_TRACE_FACILITY
     task_monitor_start();
+#endif
 }
