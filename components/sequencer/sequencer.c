@@ -166,5 +166,6 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, NULL);
 
+    // Subscribe to the note key events
     esp_event_handler_register_with(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event, NULL);
 }

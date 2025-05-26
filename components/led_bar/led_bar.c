@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "led_bar.h"
 #include "sequencer.h"
+#include "sequencer_fsm.h"
 #include "tpic6b595.h"
 
 #define BLINK_DELAY_MS 250  // 2Hz = 500ms cycle
@@ -20,16 +21,6 @@ static tpic6b595_t shift_reg = {
 static void led_bar_set_active_only(uint8_t pos)
 {
     tpic6b595_write(&shift_reg, 0x80 >> pos);
-}
-
-static void sequencer_listener(
-    void* handler_arg,
-    esp_event_base_t base,
-    int32_t id,
-    void* event_data
-) {
-    uint8_t step_index = *(uint8_t*) event_data;
-    led_bar_set_active_only(step_index);
 }
 
 static void led_bar_blink_task(void *pvParameters)
@@ -63,6 +54,34 @@ static void led_bar_stop_blinking()
     tpic6b595_output_enable(&shift_reg);
 }
 
+static void sequencer_listener(
+    void* handler_arg,
+    esp_event_base_t base,
+    int32_t id,
+    void* event_data
+) {
+    switch (id) {
+        case SEQUENCER_EVENT_STEP_SELECT:
+            uint8_t step_index = *(uint8_t*) event_data;
+            led_bar_set_active_only(step_index);
+            break;
+
+        case SEQUENCER_EVENT_STATE_CHANGE:
+            sequencer_state_change_event_t state_change = *(sequencer_state_change_event_t*) event_data;
+
+            if (state_change.current == SEQUENCER_STATE_REC) {
+                led_bar_start_blinking();
+            } else if (state_change.previous == SEQUENCER_STATE_REC) {
+                led_bar_stop_blinking();
+            }
+
+            break;
+
+        default:
+            break;
+    }
+}
+
 /**
  * @brief Initializes the LED bar using TPIC6B595 shift register.
  *
@@ -84,7 +103,7 @@ void led_bar_init(esp_event_loop_handle_t event_loop)
     esp_event_handler_register_with(
         event_loop,
         SEQUENCER_EVENT,
-        SEQUENCER_EVENT_STEP_SELECT,
+        ESP_EVENT_ANY_ID,
         sequencer_listener,
         NULL
     );
