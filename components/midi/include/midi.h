@@ -6,6 +6,10 @@
 #include "midi/notes.h"
 #include "midi/parser.h"
 
+#define MIDI_NOTE_VELOCITY_MAX 127
+
+typedef uint8_t midi_note_t;
+
 // --- Function signatures ----------------------
 
 void midi_out_init(uart_port_t uart_num, gpio_num_t tx_pin);

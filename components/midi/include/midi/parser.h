@@ -17,17 +17,17 @@ typedef struct {
     uint8_t channel;
     uint8_t note;
     uint8_t velocity;
-} midi_note_t;
+} midi_msg_note_t;
 
 typedef struct {
     uint8_t channel;
     uint8_t controller;
     uint8_t value;
-} midi_cc_t;
+} midi_msg_cc_t;
 
 typedef union {
-    midi_note_t note;
-    midi_cc_t cc;
+    midi_msg_note_t note;
+    midi_msg_cc_t cc;
 } midi_data_t;
 
 /**
