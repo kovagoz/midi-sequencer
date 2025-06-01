@@ -1,6 +1,8 @@
 #pragma once
 
 #include "esp_event.h"
+#include "midi.h"
+#include "time.h"
 
 #define STEP_SEQUENCE_LENGTH 8
 
@@ -23,6 +25,7 @@ ESP_EVENT_DECLARE_BASE(SEQUENCER_EVENT);
 enum {
     SEQUENCER_EVENT_STATE_CHANGE,
     SEQUENCER_EVENT_STEP_SELECT,
+    SEQUENCER_EVENT_STEP_TRIG,
 };
 
 /**

@@ -9,14 +9,21 @@
 #include "sequencer.h"
 #include "sequencer_fsm.h"
 #include "sequencer_fsm_internal.h"
+#include "time.h"
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 
 static const char *TAG = "sequencer";
 static uint8_t step_index = 0;
 static uint8_t tempo = 120; // bpm
+static uint8_t gate = 80; // percent
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t sequencer_event_loop;
+
+static sequencer_step_sequence_t sequence = {
+    NOTE_C4, NOTE_D4, NOTE_E4, NOTE_F4,
+    NOTE_G4, NOTE_A4, NOTE_B4, NOTE_C5
+};
 
 //--------------------------------------
 //  Private functions
@@ -68,6 +75,36 @@ static void sequencer_reset()
 }
 
 /**
+ * Get the full length of a single step in milliseconds
+ */
+static time_ms_t sequencer_get_step_duration_ms()
+{
+    return 60000 / tempo;
+}
+
+/**
+ * Play the current step
+ *
+ * Emit an event with note and gate time.
+ */
+static void sequencer_step_trig()
+{
+    const sequencer_step_trig_event_t event = {
+        .note = sequence[step_index],
+        .gate_time_ms = sequencer_get_step_duration_ms() * gate / 100,
+    };
+
+    esp_event_post_to(
+        sequencer_event_loop,
+        SEQUENCER_EVENT,
+        SEQUENCER_EVENT_STEP_TRIG,
+        &event,
+        sizeof(event),
+        portMAX_DELAY
+    );
+}
+
+/**
  * @brief Task function to play a hard-coded step sequence.
  *
  * This function runs in its own FreeRTOS task and plays a predefined
@@ -78,23 +115,11 @@ static void sequencer_reset()
  */
 static void sequencer_play_task(void *pvParameters)
 {
-    // StepSequence sequence = {
-    //     {NOTE_C4},
-    //     {NOTE_D4},
-    //     {NOTE_E4},
-    //     {NOTE_F4},
-    //     {NOTE_G4},
-    //     {NOTE_A4},
-    //     {NOTE_B4},
-    //     {NOTE_C5}
-    // };
-
-    uint32_t step_duration_ms = 60000 / tempo;
-
     sequencer_reset();
 
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(step_duration_ms));
+        sequencer_step_trig();
+        vTaskDelay(pdMS_TO_TICKS(sequencer_get_step_duration_ms()));
         sequencer_step_forward();
     }
 }
