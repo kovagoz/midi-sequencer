@@ -1,6 +1,10 @@
+#include <stdint.h>
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "esp_err.h"
 #include "midi.h"
 
-static uart_port_t midi_out_uart = UART_NUM_1;
+static uart_port_t midi_out_uart;
 
 /**
  * @brief Initialize the UART interface for sending MIDI messages.

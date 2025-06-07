@@ -1,7 +1,6 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_event.h"
-#include "esp_log.h"
 #include "midi.h"
 #include "sequencer.h"
 #include "transmitter.h"
