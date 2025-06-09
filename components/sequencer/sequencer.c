@@ -4,8 +4,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "midi/notes.h"
-#include "midi/parser.h"
+#include "midi.h"
 #include "sequencer.h"
 #include "sequencer_fsm.h"
 #include "sequencer_fsm_internal.h"
@@ -165,8 +164,9 @@ static void on_enter_record()
 static void on_note_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (sequencer_fsm_get_state() == SEQUENCER_STATE_REC) {
-        uint8_t note = *(uint8_t *) data;
-        ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
+        midi_note_t note = *(midi_note_t *) data;
+        // ESP_LOGI(TAG, "Recorded note %s at %d", midi_note_name(note), step_index);
+        sequence[step_index] = note;
         sequencer_step_forward();
     }
 }
