@@ -7,7 +7,6 @@
 
 ESP_EVENT_DEFINE_BASE(CONTROLLER_EVENT);
 
-static const char *TAG = "controller";
 static esp_event_loop_handle_t event_loop;
 
 /**
