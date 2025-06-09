@@ -39,6 +39,11 @@ void midi_out_init(uart_port_t uart_num, gpio_num_t tx_pin)
     ));
 }
 
+void midi_out_invert_signal()
+{
+    ESP_ERROR_CHECK(uart_set_line_inverse(midi_out_uart, UART_SIGNAL_TXD_INV));
+}
+
 /**
  * @brief Send a MIDI Note On message.
  *

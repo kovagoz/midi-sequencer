@@ -24,6 +24,9 @@ static void on_note_event(void *arg, esp_event_base_t base, int32_t id, void *da
 void transmitter_init(esp_event_loop_handle_t event_loop)
 {
     midi_out_init(UART_NUM_1, GPIO_NUM_25);
+    
+    // Because the NPN transistor on the output flips the signal.
+    midi_out_invert_signal();
 
     esp_event_handler_register_with(
         event_loop,
