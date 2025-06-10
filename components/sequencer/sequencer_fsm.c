@@ -67,6 +67,22 @@ static size_t sequencer_fsm_table_size()
     return sizeof(fsm_table) / sizeof(fsm_table[0]);
 }
 
+void sequencer_fsm_change_state(sequencer_state_t new_state)
+{
+    // TODO validate the state change
+
+    sequencer_fsm_call_exit_hook();
+
+    // Change state
+    sequencer_state_t previous = current_state;
+    sequencer_state_t next = new_state;
+    ESP_LOGI(TAG, "FSM transition: %d -> %d", previous, next);
+    current_state = next;
+
+    sequencer_fsm_call_enter_hook();
+    sequencer_fsm_broadcast_state_change(previous, current_state);
+}
+
 static void sequencer_fsm_event_handler(
     void *handler_args,
     esp_event_base_t base,
@@ -77,17 +93,7 @@ static void sequencer_fsm_event_handler(
 
     for (size_t i = 0; i < sequencer_fsm_table_size(); ++i) {
         if (fsm_table[i].current == current_state && fsm_table[i].event == event) {
-            sequencer_fsm_call_exit_hook();
-
-            // Change state
-            sequencer_state_t previous = current_state;
-            sequencer_state_t next = fsm_table[i].next;
-            ESP_LOGI(TAG, "FSM transition: %d -> %d", previous, next);
-            current_state = next;
-
-            sequencer_fsm_call_enter_hook();
-            sequencer_fsm_broadcast_state_change(previous, current_state);
-
+            sequencer_fsm_change_state(fsm_table[i].next);
             return;
         }
     }
