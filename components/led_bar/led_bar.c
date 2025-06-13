@@ -26,12 +26,10 @@ static void led_bar_set_active_only(uint8_t pos)
 static void led_bar_blink_task(void *pvParameters)
 {
     while (1) {
-        // Because output is enabled by default, we start the blink
-        // with turning the LEDs off.
-        tpic6b595_output_disable(&shift_reg);
+        tpic6b595_output_enable(&shift_reg);
         vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY_MS));
 
-        tpic6b595_output_enable(&shift_reg);
+        tpic6b595_output_disable(&shift_reg);
         vTaskDelay(pdMS_TO_TICKS(BLINK_DELAY_MS));
     }
 }
