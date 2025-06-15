@@ -64,7 +64,7 @@ static void sequencer_listener(
             led_bar_set_active_only(step_index);
             break;
 
-        case SEQUENCER_EVENT_STATE_CHANGE:
+        case SEQUENCER_EVENT_STATE_CHANGED:
             sequencer_state_change_event_t state_change = *(sequencer_state_change_event_t*) event_data;
 
             if (state_change.current == SEQUENCER_STATE_REC) {

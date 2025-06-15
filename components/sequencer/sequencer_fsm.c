@@ -41,7 +41,7 @@ static void sequencer_fsm_broadcast_state_change(
     esp_event_post_to(
         fsm_event_loop,
         SEQUENCER_EVENT,
-        SEQUENCER_EVENT_STATE_CHANGE,
+        SEQUENCER_EVENT_STATE_CHANGED,
         &ev,
         sizeof(ev),
         portMAX_DELAY
