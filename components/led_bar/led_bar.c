@@ -23,6 +23,11 @@ static void led_bar_set_active_only(uint8_t pos)
     tpic6b595_write(&shift_reg, 0x80 >> pos);
 }
 
+static void led_bar_all_off()
+{
+    tpic6b595_write(&shift_reg, 0);
+}
+
 static void led_bar_blink_task(void *pvParameters)
 {
     while (1) {
@@ -71,6 +76,10 @@ static void sequencer_listener(
                 led_bar_start_blinking();
             } else if (state_change.previous == SEQUENCER_STATE_REC) {
                 led_bar_stop_blinking();
+            }
+
+            if (state_change.current == SEQUENCER_STATE_STOP) {
+                led_bar_all_off();
             }
 
             break;
