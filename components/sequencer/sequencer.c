@@ -155,12 +155,6 @@ static void on_exit_play()
     }
 }
 
-static void on_enter_record()
-{
-    sequencer_reset();
-    ESP_LOGI(TAG, "Recording started");
-}
-
 static void on_note_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (sequencer_fsm_get_state() == SEQUENCER_STATE_REC) {
@@ -169,6 +163,31 @@ static void on_note_event(void *arg, esp_event_base_t base, int32_t id, void *da
         sequence[step_index] = note;
         sequencer_step_forward();
     }
+}
+
+static void register_note_handler_task(void *pvParameters)
+{
+    esp_event_handler_register_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event, NULL);
+    vTaskDelete(NULL);
+}
+
+static void unregister_note_handler_task(void *pvParameters)
+{
+    esp_event_handler_unregister_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event);
+    vTaskDelete(NULL);
+}
+
+static void on_enter_record()
+{
+    sequencer_reset();
+    // Workaround for the rule that a handler cannot be registered by another handler.
+    xTaskCreate(register_note_handler_task, NULL, 2048, NULL, 5, NULL);
+    ESP_LOGI(TAG, "Recording started");
+}
+
+static void on_exit_record()
+{
+    xTaskCreate(unregister_note_handler_task, NULL, 2048, NULL, 5, NULL);
 }
 
 //--------------------------------------
@@ -189,7 +208,7 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
 
     sequencer_fsm_init(event_loop);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
-    sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, NULL);
+    sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
 
     // Subscribe to the note key events
     esp_event_handler_register_with(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event, NULL);
