@@ -5,10 +5,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "midi.h"
+#include "nvs.h"
 #include "sequencer.h"
 #include "sequencer_fsm.h"
 #include "sequencer_fsm_internal.h"
+#include "storage.h"
 #include "time.h"
+
+#define STORAGE_SEQUENCE_NS "sequence"
+#define STORAGE_SEQUENCE_ID "default"
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 
@@ -177,6 +182,12 @@ static void unregister_note_handler_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
+static void save_sequence_task(void *pvParameters)
+{
+    storage_save(STORAGE_SEQUENCE_NS, STORAGE_SEQUENCE_ID, &sequence, sizeof(sequence));
+    vTaskDelete(NULL);
+}
+
 static void on_enter_record()
 {
     sequencer_reset();
@@ -188,6 +199,18 @@ static void on_enter_record()
 static void on_exit_record()
 {
     xTaskCreate(unregister_note_handler_task, NULL, 2048, NULL, 5, NULL);
+    xTaskCreate(save_sequence_task, NULL, 2048, NULL, 5, NULL);
+}
+
+static void load_sequence()
+{
+    size_t size = sizeof(sequence);
+
+    esp_err_t err = storage_load(STORAGE_SEQUENCE_NS, STORAGE_SEQUENCE_ID, &sequence, &size);
+
+    if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGE(TAG, "Could not load the sequence from NVS");
+    }
 }
 
 //--------------------------------------
@@ -205,6 +228,8 @@ static void on_exit_record()
 void sequencer_init(esp_event_loop_handle_t event_loop)
 {
     sequencer_event_loop = event_loop;
+
+    load_sequence();
 
     sequencer_fsm_init(event_loop);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);

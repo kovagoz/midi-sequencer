@@ -3,6 +3,7 @@
 #include "controller.h"
 #include "led_bar.h"
 #include "sequencer.h"
+#include "storage.h"
 #include "transmitter.h"
 #if CONFIG_FREERTOS_USE_TRACE_FACILITY
 #include "task_monitor.h"
@@ -27,6 +28,7 @@ void app_main(void)
 {
     create_event_loop();
 
+    storage_init();
     led_bar_init(event_loop);
     controller_init(event_loop);
     sequencer_init(event_loop);
