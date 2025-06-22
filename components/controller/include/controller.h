@@ -9,6 +9,8 @@ typedef enum {
     CONTROLLER_EVENT_PLAY,
     CONTROLLER_EVENT_REC,
     CONTROLLER_EVENT_NOTE,
+    CONTROLLER_EVENT_BPM_INCR,
+    CONTROLLER_EVENT_BPM_DECR,
 } controller_event_t;
 
 /**

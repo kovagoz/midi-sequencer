@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "controller.h"
+#include "esp_err.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -128,6 +129,36 @@ static void sequencer_play_task(void *pvParameters)
     }
 }
 
+static void on_bpm_incr(void *arg, esp_event_base_t base, int32_t id, void *data)
+{
+    if (tempo < 200) {
+        ++tempo;
+    }
+}
+
+static void on_bpm_decr(void *arg, esp_event_base_t base, int32_t id, void *data)
+{
+    if (tempo > 40) {
+        --tempo;
+    }
+}
+
+void register_bpm_handler_task(void *pvParameters)
+{
+    esp_event_handler_register_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_INCR, on_bpm_incr, NULL);
+    esp_event_handler_register_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_DECR, on_bpm_decr, NULL);
+
+    vTaskDelete(NULL);
+}
+
+void unregister_bpm_handler_task(void *pvParameters)
+{
+    esp_event_handler_unregister_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_INCR, on_bpm_incr);
+    esp_event_handler_unregister_with(sequencer_event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_DECR, on_bpm_decr);
+
+    vTaskDelete(NULL);
+}
+
 /**
  * @brief Starts the sequencer playback.
  *
@@ -142,7 +173,9 @@ static void on_enter_play()
     }
 
     ESP_LOGI(TAG, "Creating the player task");
+
     xTaskCreate(sequencer_play_task, "sequencer_play", 2048, NULL, 5, &xHandle);
+    xTaskCreate(register_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
 }
 
 /**
@@ -155,6 +188,8 @@ static void on_exit_play()
     if (xHandle != NULL) {
         ESP_LOGI(TAG, "Deleting the player task");
         vTaskDelete(xHandle);
+
+        xTaskCreate(unregister_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
 
         xHandle = NULL;
     }
@@ -234,7 +269,4 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
     sequencer_fsm_init(event_loop);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
-
-    // Subscribe to the note key events
-    esp_event_handler_register_with(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_NOTE, on_note_event, NULL);
 }

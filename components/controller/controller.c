@@ -49,6 +49,20 @@ static bool controller_note_pressed(const midi_message_t *msg)
     return msg->type == MIDI_MSG_NOTE_ON;
 }
 
+static bool controller_bpm_increased(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_CC && \
+        msg->data.cc.controller == 114 && \
+        (msg->data.cc.value == 65 || msg->data.cc.value == 66);
+}
+
+static bool controller_bpm_decreased(const midi_message_t *msg)
+{
+    return msg->type == MIDI_MSG_CC && \
+        msg->data.cc.controller == 114 && \
+        (msg->data.cc.value == 63 || msg->data.cc.value == 62);
+}
+
 /**
  * @brief Handles incoming MIDI messages relevant to control actions.
  *
@@ -74,6 +88,10 @@ static void controller_midi_message_handler(const midi_message_t *msg)
             sizeof(msg->data.note.note),
             portMAX_DELAY
         );
+    } else if (controller_bpm_increased(msg)) {
+        esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_INCR, NULL, 0, portMAX_DELAY);
+    } else if (controller_bpm_decreased(msg)) {
+        esp_event_post_to(event_loop, CONTROLLER_EVENT, CONTROLLER_EVENT_BPM_DECR, NULL, 0, portMAX_DELAY);
     }
 
     // printf("Channel: %d, Note: %s\n", msg->data.note.channel, midi_note_name(msg->data.note.note));
