@@ -124,7 +124,7 @@ static void sequencer_play_task(void *pvParameters)
 
     while (1) {
         sequencer_step_trig();
-        vTaskDelay(pdMS_TO_TICKS(sequencer_get_step_duration_ms()));
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for timer ISR
         sequencer_step_forward();
     }
 }
@@ -174,8 +174,10 @@ static void on_enter_play()
 
     ESP_LOGI(TAG, "Creating the player task");
 
-    xTaskCreate(sequencer_play_task, "sequencer_play", 2048, NULL, 5, &xHandle);
+    xTaskCreate(sequencer_play_task, NULL, 2048, NULL, 5, &xHandle);
     xTaskCreate(register_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
+
+    sequencer_timer_start(sequencer_get_step_duration_ms());
 }
 
 /**
@@ -186,6 +188,8 @@ static void on_enter_play()
 static void on_exit_play()
 {
     if (xHandle != NULL) {
+        sequencer_timer_stop();
+
         ESP_LOGI(TAG, "Deleting the player task");
         vTaskDelete(xHandle);
 
@@ -269,4 +273,6 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
     sequencer_fsm_init(event_loop);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
+
+    sequencer_timer_init(&xHandle);
 }
