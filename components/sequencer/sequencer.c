@@ -20,7 +20,7 @@ ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 
 static const char *TAG = "sequencer";
 static uint8_t step_index = 0;
-static uint8_t tempo = 120; // bpm
+static uint8_t tempo = 100; // bpm
 static uint8_t gate = 80; // percent
 static TaskHandle_t xHandle = NULL;
 static esp_event_loop_handle_t sequencer_event_loop;
