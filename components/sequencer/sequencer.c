@@ -130,17 +130,23 @@ static void sequencer_play_task(void *pvParameters)
     }
 }
 
+static void set_tempo(uint8_t new_tempo)
+{
+    tempo = new_tempo;
+    sequencer_timer_set_period(sequencer_get_step_duration_ms());
+}
+
 static void on_bpm_incr(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (tempo < 200) {
-        ++tempo;
+        set_tempo(tempo + 1);
     }
 }
 
 static void on_bpm_decr(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (tempo > 40) {
-        --tempo;
+        set_tempo(tempo - 1);
     }
 }
 
