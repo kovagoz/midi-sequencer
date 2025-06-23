@@ -10,6 +10,7 @@
 #include "sequencer.h"
 #include "sequencer_fsm.h"
 #include "sequencer_fsm_internal.h"
+#include "sequencer_timer.h"
 #include "storage.h"
 #include "time.h"
 
