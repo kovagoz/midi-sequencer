@@ -84,7 +84,7 @@ static void sequencer_reset()
  */
 static time_ms_t sequencer_get_step_duration_ms()
 {
-    return 60000 / tempo;
+    return 60000 / tempo / 4; // 16th notes
 }
 
 /**
