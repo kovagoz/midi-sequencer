@@ -5,12 +5,12 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "metronome.h"
 #include "midi.h"
 #include "nvs.h"
 #include "sequencer.h"
 #include "sequencer_fsm.h"
 #include "sequencer_fsm_internal.h"
-#include "sequencer_timer.h"
 #include "storage.h"
 #include "time.h"
 
@@ -133,7 +133,7 @@ static void sequencer_play_task(void *pvParameters)
 static void set_tempo(uint8_t new_tempo)
 {
     tempo = new_tempo;
-    sequencer_timer_set_period(sequencer_get_step_duration_ms());
+    metronome_set_period(sequencer_get_step_duration_ms());
 }
 
 static void on_bpm_incr(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -184,7 +184,7 @@ static void on_enter_play()
     xTaskCreate(sequencer_play_task, NULL, 2048, NULL, 5, &player_task_handle);
     xTaskCreate(register_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
 
-    sequencer_timer_start(sequencer_get_step_duration_ms());
+    metronome_start(sequencer_get_step_duration_ms());
 }
 
 /**
@@ -195,7 +195,7 @@ static void on_enter_play()
 static void on_exit_play()
 {
     if (player_task_handle != NULL) {
-        sequencer_timer_stop();
+        metronome_stop();
 
         ESP_LOGI(TAG, "Deleting the player task");
         vTaskDelete(player_task_handle);
@@ -281,5 +281,5 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
 
-    sequencer_timer_init(&player_task_handle);
+    metronome_init(&player_task_handle);
 }
