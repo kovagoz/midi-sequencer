@@ -23,7 +23,7 @@ static const char *TAG = "sequencer";
 static uint8_t step_index = 0;
 static uint8_t tempo = 100; // bpm
 static uint8_t gate = 80; // percent
-static TaskHandle_t xHandle = NULL;
+static TaskHandle_t player_task_handle = NULL;
 static esp_event_loop_handle_t sequencer_event_loop;
 
 static sequencer_step_sequence_t sequence = {
@@ -174,14 +174,14 @@ void unregister_bpm_handler_task(void *pvParameters)
  */
 static void on_enter_play()
 {
-    if (xHandle != NULL) {
+    if (player_task_handle != NULL) {
         ESP_LOGI(TAG, "Sequencer is already running");
         return;
     }
 
     ESP_LOGI(TAG, "Creating the player task");
 
-    xTaskCreate(sequencer_play_task, NULL, 2048, NULL, 5, &xHandle);
+    xTaskCreate(sequencer_play_task, NULL, 2048, NULL, 5, &player_task_handle);
     xTaskCreate(register_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
 
     sequencer_timer_start(sequencer_get_step_duration_ms());
@@ -194,15 +194,15 @@ static void on_enter_play()
  */
 static void on_exit_play()
 {
-    if (xHandle != NULL) {
+    if (player_task_handle != NULL) {
         sequencer_timer_stop();
 
         ESP_LOGI(TAG, "Deleting the player task");
-        vTaskDelete(xHandle);
+        vTaskDelete(player_task_handle);
 
         xTaskCreate(unregister_bpm_handler_task, NULL, 2048, NULL, 5, NULL);
 
-        xHandle = NULL;
+        player_task_handle = NULL;
     }
 }
 
@@ -281,5 +281,5 @@ void sequencer_init(esp_event_loop_handle_t event_loop)
     sequencer_fsm_set_hooks(SEQUENCER_STATE_PLAY, on_enter_play, on_exit_play);
     sequencer_fsm_set_hooks(SEQUENCER_STATE_REC, on_enter_record, on_exit_record);
 
-    sequencer_timer_init(&xHandle);
+    sequencer_timer_init(&player_task_handle);
 }
