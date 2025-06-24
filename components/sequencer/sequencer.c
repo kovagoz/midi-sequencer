@@ -124,8 +124,8 @@ static void sequencer_play_task(void *pvParameters)
     sequencer_reset();
 
     while (1) {
-        sequencer_step_trig();
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Wait for timer ISR
+        sequencer_step_trig();
         sequencer_step_forward();
     }
 }
