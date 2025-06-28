@@ -4,17 +4,6 @@
 #include "midi.h"
 #include "time.h"
 
-#define STEP_SEQUENCE_LENGTH 8
-
-/**
- * @brief Defines a fixed-length sequence of steps.
- *
- * A StepSequence represents one track of steps to be played
- * by the sequencer. Each step may correspond to a MIDI note
- * to trigger at a specific time in the pattern.
- */
-typedef midi_note_t sequencer_step_sequence_t[STEP_SEQUENCE_LENGTH];
-
 ESP_EVENT_DECLARE_BASE(SEQUENCER_EVENT);
 
 /**

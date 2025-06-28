@@ -9,6 +9,16 @@ ESP_EVENT_DEFINE_BASE(CONTROLLER_EVENT);
 
 static esp_event_loop_handle_t event_loop;
 
+esp_err_t controller_event_subscribe(int32_t event_id, esp_event_handler_t event_handler, void *event_handler_arg)
+{
+    return esp_event_handler_register_with(event_loop, CONTROLLER_EVENT, event_id, event_handler, event_handler_arg);
+}
+
+esp_err_t controller_event_unsubscribe(int32_t event_id, esp_event_handler_t event_handler)
+{
+    return esp_event_handler_unregister_with(event_loop, CONTROLLER_EVENT, event_id, event_handler);
+}
+
 /**
  * @brief Checks if the incoming MIDI message indicates the Play button was pressed.
  *
