@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "esp_event.h"
 #include "internal/event.h"
+#include "internal/fsm.h"
 #include "internal/persist.h"
 #include "internal/play.h"
 #include "internal/record.h"
@@ -8,7 +9,6 @@
 #include "metronome.h"
 #include "sequencer.h"
 #include "sequencer_fsm.h"
-#include "sequencer_fsm_internal.h"
 
 ESP_EVENT_DEFINE_BASE(SEQUENCER_EVENT);
 

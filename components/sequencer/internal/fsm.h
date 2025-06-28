@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_event.h"
+#include "sequencer_fsm.h"
 
 typedef void (*state_hook_t)(void);
 

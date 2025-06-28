@@ -1,9 +1,9 @@
 #include "controller.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "internal/fsm.h"
 #include "sequencer.h"
 #include "sequencer_fsm.h"
-#include "sequencer_fsm_internal.h"
 
 static const char *TAG = "sequencer_fsm";
 
